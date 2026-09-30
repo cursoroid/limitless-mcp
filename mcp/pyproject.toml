@@ -1,0 +1,15 @@
+[project]
+name = "limitless-mcp"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "mcp[cli]<2",
+    "psycopg[binary]",
+    "faker",
+    "pydantic",
+    "uvicorn",
+    "pytest",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
