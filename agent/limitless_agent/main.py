@@ -8,6 +8,8 @@ import asyncio
 import os
 import sys
 
+os.environ.setdefault("PYDANTIC_AI_NO_BANNER", "1")  # before pydantic_ai import
+
 import httpx2
 from pydantic_ai import Agent
 from pydantic_ai.exceptions import ModelAPIError, ModelHTTPError
