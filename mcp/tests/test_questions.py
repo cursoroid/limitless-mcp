@@ -1,5 +1,4 @@
-"""The 5 demo questions, calling tool functions directly against the seeded db.
-Asserts on data, not on Claude's wording. Run: docker compose run --rm mcp pytest"""
+# Hits the seeded db directly: docker compose run --rm mcp pytest
 import pytest
 from mcp.server.fastmcp.exceptions import ToolError
 

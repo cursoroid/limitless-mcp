@@ -5,7 +5,7 @@ from starlette.responses import JSONResponse
 
 
 class ApiKeyMiddleware:
-    """Pure ASGI middleware: 401 unless X-API-Key matches LIMITLESS_API_KEY. /health is open."""
+    # 401 unless X-API-Key matches. /health stays open for the docker healthcheck.
 
     def __init__(self, app):
         self.app = app

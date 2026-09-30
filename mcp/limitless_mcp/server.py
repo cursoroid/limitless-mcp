@@ -8,9 +8,8 @@ from limitless_mcp.log import logged, write_log
 from limitless_mcp.tools import TOOLS
 
 
+# FastMCP validates args before logged() runs, so bad input needs catching here
 class LimitlessMCP(FastMCP):
-    """Returns tool errors with their code first (FastMCP prepends "Error executing tool ...")
-    and reports argument validation failures, which happen before `logged` runs, as INVALID_INPUT."""
 
     async def call_tool(self, name, arguments):
         try:
@@ -22,12 +21,12 @@ class LimitlessMCP(FastMCP):
                 err = ToolError(f"INVALID_INPUT: {detail}")
                 write_log(name, arguments, ok=False, error=str(err))
                 raise err from None
-            if cause is None:  # only "Unknown tool: x" is raised without a cause
+            if cause is None:  # unknown tool
                 raise ToolError(f"NOT_FOUND: {e}") from None
             raise cause if isinstance(cause, ToolError) else e
 
 
-# host=0.0.0.0 so FastMCP doesn't restrict Host headers to localhost (agent calls http://mcp:8000)
+# host=0.0.0.0 otherwise FastMCP rejects the agent's Host: mcp:8000 header
 mcp = LimitlessMCP("limitless", stateless_http=True, host="0.0.0.0")
 for fn in TOOLS:
     mcp.tool()(logged(fn))

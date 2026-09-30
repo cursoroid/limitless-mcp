@@ -14,7 +14,6 @@ LOG_FILE = Path(os.environ.get("LOG_DIR", "logs")) / "tool-calls.jsonl"
 
 
 def write_log(tool: str, params: dict, **fields) -> None:
-    """One JSON line per tool call, to stderr (docker compose logs) and logs/tool-calls.jsonl."""
     entry = {"ts": datetime.now(timezone.utc).isoformat(), "tool": tool, "params": params, **fields}
     line = json.dumps(entry, default=str)
     print(line, file=sys.stderr, flush=True)
@@ -24,7 +23,6 @@ def write_log(tool: str, params: dict, **fields) -> None:
 
 
 def logged(fn):
-    """Time and log every call; map exceptions to ToolErrors with a code prefix."""
 
     @functools.wraps(fn)
     def wrapper(**params):

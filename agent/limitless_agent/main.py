@@ -1,8 +1,5 @@
-"""Limitless ERP agent: Claude answers plant-controller questions using MCP tools.
-
-Usage: python -m limitless_agent.main            # interactive REPL
-       python -m limitless_agent.main "question"  # one-shot
-"""
+# python -m limitless_agent.main              -> interactive
+# python -m limitless_agent.main "question"   -> answer once and exit
 
 import asyncio
 import os
@@ -32,7 +29,7 @@ You are an ERP assistant for plant controllers at a manufacturing company.
 
 
 async def fail_on_401(response: httpx2.Response) -> None:
-    # The MCP client turns a 401 into a generic "error response"; raise so explain() can tell.
+    # otherwise the MCP client swallows the 401 into a generic error
     if response.status_code == 401:
         response.raise_for_status()
 
@@ -42,13 +39,13 @@ def build_agent() -> Agent:
         headers={"X-API-Key": os.environ["LIMITLESS_API_KEY"]},
         event_hooks={"response": [fail_on_401]},
     )
-    # tool_error_behavior="failed": tool errors reach Claude as results, no retry loop
+    # "failed" = hand tool errors to Claude instead of retrying
     mcp = MCPToolset(os.environ["MCP_URL"], http_client=http, tool_error_behavior="failed")
     return Agent(MODEL, toolsets=[mcp], system_prompt=SYSTEM_PROMPT)
 
 
 def find(exc: BaseException, kind: type):
-    """Find an exception of `kind` in exc, its causes, or its exception-group members."""
+    # pydantic-ai wraps errors (sometimes in ExceptionGroups), so dig for the real one
     todo, seen = [exc], set()
     while todo:
         e = todo.pop()
@@ -101,7 +98,7 @@ async def repl(agent: Agent) -> None:
 async def main(argv: list[str]) -> int:
     agent = build_agent()
     try:
-        async with agent:  # opens the MCP connection once for the whole session
+        async with agent:
             if argv:
                 print((await agent.run(" ".join(argv))).output)
             else:

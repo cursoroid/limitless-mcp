@@ -8,7 +8,7 @@ An MCP server over a small ERP database (customers, invoices, inventory, vendors
 - An Anthropic API key
 - `uv` only if you want to run things outside containers
 
-## Run (3 commands)
+## Run
 
 ```bash
 cp .env.example .env                      # set ANTHROPIC_API_KEY and LIMITLESS_API_KEY
@@ -17,7 +17,7 @@ docker compose run --rm agent             # interactive; or one-shot:
 docker compose run --rm agent "Which SKUs are critical in Plant A?"
 ```
 
-Use `run`, not `up`, for the agent: `up` doesn't attach a usable stdin.
+Use `run` for the agent, `up` doesn't give it a usable stdin.
 
 ## Architecture
 
@@ -34,7 +34,7 @@ Use `run`, not `up`, for the agent: `up` doesn't attach a usable stdin.
 | `mcp` (`./mcp`) | DB schema, SQL | Claude, prompts |
 | `agent` (`./agent`) | Claude, the MCP URL | DB, SQL |
 
-The agent's only way to the data is MCP. Swap Postgres for SAP or Tally behind the `mcp` container and the agent doesn't change.
+The agent only ever talks MCP. Replace Postgres with SAP or Tally behind the `mcp` container and the agent doesn't need to change.
 
 - **Transport:** Streamable HTTP (stateless) at `http://localhost:8000/mcp`. stdio doesn't work across containers.
 - **Auth:** every request needs `X-API-Key` equal to `LIMITLESS_API_KEY`, compared with `hmac.compare_digest`. Anything else gets `401 {"error":"unauthorized"}`. `GET /health` is open for the compose healthcheck.
@@ -54,13 +54,13 @@ All amounts are INR (1 lakh = 100,000). List tools default to `limit=50` (max 20
 | `read_vendors` | `payment_status?` (paid/pending), `min_days_overdue?`, `limit?` | `{total, total_amount_due, vendors: [{id, name, payment_status, amount_due, due_date, days_overdue}]}` |
 | `get_outstanding_balance` | `customer_id` | `{customer_id, customer_name, total_pending, invoice_count, oldest_invoice_age}` |
 
-`action_needed` is based on the shortfall, `reorder_level - quantity`. A shortfall of 3 or more is `ORDER IMMEDIATELY`, 1 to 2 is `ORDER TODAY`, and 0 or less is `OK`. Results are sorted by largest shortfall first. The rule counts missing units, not a ratio: a ratio can't rank `BEARING_6205` (2/5, 40%) as more urgent than `PUMP_320` (1/3, 33%). "Critical" means `below_reorder_only=true`, i.e. anything that isn't `OK`.
+`action_needed` comes from the shortfall (`reorder_level - quantity`): 3 or more is `ORDER IMMEDIATELY`, 1-2 is `ORDER TODAY`, otherwise `OK`. I went with missing units rather than a percentage because that's what gets the sample output right (BEARING_6205 at 2/5 is more urgent than PUMP_320 at 1/3). "Critical" = `below_reorder_only=true`.
 
 Outputs are pydantic models, so FastMCP emits a JSON schema and `structuredContent`. NUMERIC columns are cast to `float8` because pydantic serializes `Decimal` as a string. All SQL uses bound parameters.
 
 ## Schema additions
 
-`db/schema.sql` is the assignment's schema plus the columns that its own questions need:
+Same schema as the brief, plus a few columns the test questions can't be answered without:
 
 | Table | Added | Why |
 |---|---|---|
@@ -118,7 +118,7 @@ Vendors pending > 30 days, most overdue first:
 
 ## Error handling
 
-Tool failures come back as MCP `isError` results whose message starts with a code. The server never crashes, and Claude sees the message and explains it.
+Tool failures come back as MCP `isError` results, message prefixed with a code. Claude gets the message and explains it to the user; the server keeps running.
 
 | Code | When | Example |
 |---|---|---|

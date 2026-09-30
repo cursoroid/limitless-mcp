@@ -1,5 +1,5 @@
-"""Deterministic fake ERP data (Faker seed 42). Dates are relative to today so "overdue" stays true.
-Usage: python -m limitless_mcp.seed [--if-empty]"""
+# Fake ERP data, seeded so every run is identical. Dates are relative to today.
+# python -m limitless_mcp.seed [--if-empty]
 import random
 import sys
 from datetime import date, timedelta

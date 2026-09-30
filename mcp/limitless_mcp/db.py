@@ -7,7 +7,7 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://limitless:limitless@
 
 
 def query(sql: str, params: tuple | dict = ()) -> list[dict]:
-    """Run one query on a fresh connection; the server stays up while the DB is down."""
-    # ponytail: connect per call; pool (psycopg_pool) if concurrent load matters
+    # New connection per call so a dead db doesn't take the server down.
+    # Fine at this scale, switch to psycopg_pool if load grows.
     with psycopg.connect(DATABASE_URL, connect_timeout=3, row_factory=dict_row) as conn:
         return conn.execute(sql, params).fetchall()
